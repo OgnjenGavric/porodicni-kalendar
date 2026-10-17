@@ -1,6 +1,6 @@
 {
   "name": "Porodični Kalendar Rasporeda",
-  "description": "Porodični kalendar rasporeda za dete - pregled i evidencija dana sa mamom ili tatom.",
+  "description": "Porodični kalendar rasporeda za dijete - pregled i evidencija dana sa mamom ili tatom.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

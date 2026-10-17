@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="50%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#9333ea" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0f172a" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Background container -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Calendar card -->
+  <g filter="url(#shadow)">
+    <rect x="76" y="86" width="360" height="340" rx="36" fill="#ffffff" />
+    
+    <!-- Header of calendar -->
+    <path d="M 76 122 C 76 102 92 86 112 86 L 400 86 C 420 86 436 102 436 122 L 436 170 L 76 170 Z" fill="#2563eb" />
+    
+    <!-- Calendar binder rings -->
+    <rect x="146" y="62" width="28" height="48" rx="14" fill="#ffffff" stroke="#1d4ed8" stroke-width="6" />
+    <rect x="338" y="62" width="28" height="48" rx="14" fill="#ffffff" stroke="#1d4ed8" stroke-width="6" />
+    
+    <!-- Heart / House in center representing child & parents -->
+    <circle cx="180" cy="245" r="32" fill="#2563eb" />
+    <circle cx="332" cy="245" r="32" fill="#9333ea" />
+    <circle cx="256" cy="335" r="42" fill="#f59e0b" />
+    
+    <!-- Smiley / Child face on golden circle -->
+    <circle cx="242" cy="326" r="5" fill="#ffffff" />
+    <circle cx="270" cy="326" r="5" fill="#ffffff" />
+    <path d="M 242 346 Q 256 360 270 346" stroke="#ffffff" stroke-width="4" stroke-linecap="round" fill="none" />
+    
+    <!-- Parent symbols in circles -->
+    <path d="M 180 234 L 180 256 M 169 245 L 191 245" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
+    <path d="M 324 245 Q 332 235 340 245 Q 332 258 324 245" fill="#ffffff" />
+
+    <!-- Calendar grid dots at bottom -->
+    <circle cx="140" cy="385" r="8" fill="#e2e8f0" />
+    <circle cx="180" cy="385" r="8" fill="#e2e8f0" />
+    <circle cx="332" cy="385" r="8" fill="#e2e8f0" />
+    <circle cx="372" cy="385" r="8" fill="#e2e8f0" />
+  </g>
+</svg>

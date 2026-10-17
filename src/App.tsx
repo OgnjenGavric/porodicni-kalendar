@@ -50,15 +50,15 @@ CREATE TABLE IF NOT EXISTS public.schedule (
 -- 2. Omogućavanje Row Level Security (RLS)
 ALTER TABLE public.schedule ENABLE ROW LEVEL SECURITY;
 
--- 3. Javno čitanje za sve korisnike (Read-Only za dete)
+-- 3. Javno čitanje za sve korisnike (Read-Only za dijete)
 CREATE POLICY "Dozvoli javno čitanje rasporeda"
 ON public.schedule
 FOR SELECT
 TO anon, authenticated
 USING (true);
 
--- 4. Dozvoli izmene za anon i autentifikovane korisnike
-CREATE POLICY "Dozvoli unos i izmene rasporeda"
+-- 4. Dozvoli unos i izmjene rasporeda
+CREATE POLICY "Dozvoli unos i izmjene rasporeda"
 ON public.schedule
 FOR ALL
 TO anon, authenticated
@@ -77,13 +77,13 @@ export interface DaySchedule {
   note?: string | null;
 }
 
-// Nazivi meseci na srpskom jeziku
+// Nazivi mjeseci na srpskom jeziku (latinica, ijekavica)
 const MONTH_NAMES = [
   'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
   'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
 ];
 
-// Dani u nedelji (počevši od Ponedeljka)
+// Dani u nedjelji (počevši od Ponedjeljka)
 const WEEK_DAYS = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned'];
 
 // ==========================================
@@ -99,10 +99,10 @@ export default function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  // Admin režim provera preko URL parametra ?admin=true
+  // Admin režim provjera preko URL parametra ?admin=true
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-  // Modal za napomene
+  // Modal za napomene / bilješke
   const [activeModalDate, setActiveModalDate] = useState<string | null>(null);
   const [modalNoteText, setModalNoteText] = useState<string>('');
   const [modalParentStatus, setModalParentStatus] = useState<ParentStatus>(null);
@@ -111,7 +111,13 @@ export default function App() {
   const [showSqlModal, setShowSqlModal] = useState<boolean>(false);
   const [copiedSql, setCopiedSql] = useState<boolean>(false);
 
-  // Provera URL upita pri montiranju
+  // PWA instalacija i mobilna spremnost
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState<boolean>(false);
+  const [isIOS, setIsIOS] = useState<boolean>(false);
+  const [showInstallGuide, setShowInstallGuide] = useState<boolean>(false);
+
+  // Provjera URL upita i PWA statusa pri montiranju
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -120,7 +126,48 @@ export default function App() {
     } catch {
       setIsAdmin(false);
     }
+
+    // Provera da li je aplikacija već instalirana na početni ekran
+    const isStandalone = 
+      window.matchMedia('(display-mode: standalone)').matches ||
+      Boolean((window.navigator as any).standalone === true);
+    setIsInstalled(isStandalone);
+
+    // Detekcija iOS uređaja (iPhone / iPad)
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    setIsIOS(/iphone|ipad|ipod/.test(userAgent));
+
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstalled(true);
+        setDeferredPrompt(null);
+      }
+    } else {
+      setShowInstallGuide(true);
+    }
+  };
 
   // Formatiranje ključa datuma (YYYY-MM-DD)
   const formatKey = (year: number, monthIndex: number, dayNumber: number): string => {
@@ -133,7 +180,7 @@ export default function App() {
     return formatKey(today.getFullYear(), today.getMonth(), today.getDate());
   }, [today]);
 
-  // Učitavanje podataka za tekući mesec
+  // Učitavanje podataka za tekući mjesec
   const fetchMonthSchedule = useCallback(async () => {
     setIsLoading(true);
     const startDate = formatKey(currentYear, currentMonth, 1);
@@ -189,7 +236,7 @@ export default function App() {
     try {
       localStorage.setItem('family_kid_schedule', JSON.stringify(newSchedule));
     } catch (e) {
-      console.warn('Neuspešno čuvanje u LocalStorage', e);
+      console.warn('Neuspješno čuvanje u LocalStorage', e);
     }
   };
 
@@ -197,14 +244,14 @@ export default function App() {
     fetchMonthSchedule();
   }, [fetchMonthSchedule]);
 
-  // Sledeći status u krugu: null ➔ tata ➔ mama ➔ null
+  // Sljedeći status u krugu: null ➔ tata ➔ mama ➔ null
   const getNextParent = (current: ParentStatus): ParentStatus => {
     if (!current) return 'tata';
     if (current === 'tata') return 'mama';
     return null;
   };
 
-  // Promena statusa klikom na dan (samo u Admin režimu)
+  // Promjena statusa klikom na dan (samo u Admin režimu)
   const handleDayClick = async (dateStr: string) => {
     if (!isAdmin) return;
 
@@ -259,7 +306,7 @@ export default function App() {
     setModalParentStatus(entry?.parent || null);
   };
 
-  // Čuvanje napomene (u Admin režimu)
+  // Čuvanje napomene / bilješke (u Admin režimu)
   const handleSaveModal = async () => {
     if (!activeModalDate || !isAdmin) return;
 
@@ -289,7 +336,7 @@ export default function App() {
           });
 
         if (error) {
-          console.error('Greška pri čuvanju napomene:', error);
+          console.error('Greška pri čuvanju bilješke:', error);
           setSaveStatus('error');
         } else {
           setSaveStatus('saved');
@@ -304,7 +351,7 @@ export default function App() {
     setActiveModalDate(null);
   };
 
-  // Brisanje napomene (u Admin režimu)
+  // Brisanje bilješke (u Admin režimu)
   const handleDeleteNote = async () => {
     if (!activeModalDate || !isAdmin) return;
 
@@ -340,7 +387,7 @@ export default function App() {
     setActiveModalDate(null);
   };
 
-  // Navigacija meseca
+  // Navigacija mjeseca
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
@@ -364,22 +411,21 @@ export default function App() {
     setCurrentMonth(today.getMonth());
   };
 
-  // Proračun kalendarske mreže (od Ponedeljka = 0 do Nedelje = 6)
+  // Proračun kalendarske mreže (od Ponedjeljka = 0 do Nedjelje = 6)
   const calendarCells = useMemo(() => {
     const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
-    // JS getDay(): 0 = Nedelja, 1 = Ponedeljak ... 6 = Subota
-    // Pomeraj da Ponedeljak bude 0:
+    // Pomeraj da Ponedjeljak bude 0:
     const mondayOffset = (firstDayIndex + 6) % 7;
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
     const cells: Array<{ type: 'empty' | 'day'; day?: number; dateKey?: string }> = [];
 
-    // Prazne ćelije pre prvog dana
+    // Prazne ćelije prije prvog dana
     for (let i = 0; i < mondayOffset; i++) {
       cells.push({ type: 'empty' });
     }
 
-    // Dani u mesecu
+    // Dani u mjesecu
     for (let d = 1; d <= daysInMonth; d++) {
       cells.push({
         type: 'day',
@@ -395,7 +441,7 @@ export default function App() {
   const todayStatus = scheduleData[todayKey]?.parent;
   const todayNote = scheduleData[todayKey]?.note;
 
-  // Formatirani datum za prikaz u modalu (npr. "16. Oktobar 2026")
+  // Formatirani datum za prikaz u modalu (npr. "17. Oktobar 2026")
   const formatFriendlyDate = (dateStr: string): string => {
     const [y, m, d] = dateStr.split('-').map(Number);
     const monthName = MONTH_NAMES[m - 1] || '';
@@ -423,7 +469,7 @@ export default function App() {
       };
     }
     return {
-      bg: '#f1f5f9', // Svetlosiva podloga
+      bg: '#f1f5f9', // Svijetlosiva podloga
       color: '#334155',
       border: '#e2e8f0',
       label: 'Nije definisano',
@@ -441,33 +487,50 @@ export default function App() {
             <div style={styles.brandBadge}>
               <span style={{ fontSize: '20px' }}>🏠</span>
               <div>
-                <h1 style={styles.titleText}>Dečiji Kalendar</h1>
-                <p style={styles.subtitleText}>Gde sam danas i plan nedelje</p>
+                <h1 style={styles.titleText}>Dječiji Kalendar</h1>
+                <p style={styles.subtitleText}>Gdje sam danas i plan nedjelje</p>
               </div>
             </div>
 
-            {/* Indikator statusa baze / SQL pomoćnik */}
-            <button 
-              onClick={() => setShowSqlModal(true)}
-              style={styles.databaseBadge}
-              title="Supabase konfiguracija i SQL instrukcije"
-            >
-              {isSupabaseConfigured ? '⚡ Baza povezana' : '💾 Demo režim (SQL)'}
-            </button>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {/* Dugme za instalaciju na početni ekran / PWA */}
+              {!isInstalled ? (
+                <button
+                  onClick={handleInstallClick}
+                  style={styles.installPwaBadge}
+                  title="Dodaj aplikaciju na početni ekran telefona"
+                >
+                  📲 Dodaj na ekran
+                </button>
+              ) : (
+                <span style={styles.installedPwaBadge} title="Aplikacija je pokrenuta sa početnog ekrana">
+                  📱 Aplikacija
+                </span>
+              )}
+
+              {/* Indikator statusa baze / SQL pomoćnik */}
+              <button 
+                onClick={() => setShowSqlModal(true)}
+                style={styles.databaseBadge}
+                title="Supabase konfiguracija i SQL instrukcije"
+              >
+                {isSupabaseConfigured ? '⚡ Baza' : '💾 Demo'}
+              </button>
+            </div>
           </div>
 
-          {/* STATUS TRKA ZA REŽIM (ADMIN / READ-ONLY) */}
+          {/* STATUS TRAKA ZA REŽIM (ADMIN / READ-ONLY) */}
           <div style={isAdmin ? styles.adminBanner : styles.readOnlyBanner}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '14px' }}>{isAdmin ? '🔐' : '👀'}</span>
               <span style={styles.bannerText}>
                 {isAdmin 
-                  ? 'Admin Režim (Omogućene izmene)' 
-                  : 'Samo pregled (Režim za dete)'}
+                  ? 'Admin Režim (Omogućene izmjene)' 
+                  : 'Samo pregled (Režim za dijete)'}
               </span>
             </div>
 
-            {/* Brzi taster za prelazak u admin/read-only ako korisnik želi da testira */}
+            {/* Brzi link za prelazak u admin/read-only */}
             <a 
               href={isAdmin ? window.location.pathname : `${window.location.pathname}?admin=true`}
               style={styles.modeToggleLink}
@@ -488,7 +551,7 @@ export default function App() {
                   <span style={styles.todayParentName}>
                     {todayStatus === 'tata' && 'Danas sam sa Tatom!'}
                     {todayStatus === 'mama' && 'Danas sam sa Mamom!'}
-                    {!todayStatus && 'Još nije unet raspored'}
+                    {!todayStatus && 'Još nije unesen raspored'}
                   </span>
                 </div>
               </div>
@@ -497,9 +560,9 @@ export default function App() {
                 <button 
                   onClick={() => handleOpenNoteModal(todayKey)}
                   style={styles.todayNoteButton}
-                  title="Pogledaj današnju napomenu"
+                  title="Pogledaj današnju bilješku"
                 >
-                  📝 Napomena
+                  📝 Bilješka
                 </button>
               )}
             </div>
@@ -517,22 +580,22 @@ export default function App() {
             </div>
             <div style={styles.legendItem}>
               <span style={{ ...styles.legendDot, backgroundColor: '#cbd5e1' }} />
-              <span style={styles.legendLabel}>Nije uneto</span>
+              <span style={styles.legendLabel}>Nije uneseno</span>
             </div>
             {isAdmin && (
               <span style={styles.adminTip}>
-                👉 Klik na dan menja roditelja
+                👉 Klik na dan mijenja roditelja
               </span>
             )}
           </div>
         </header>
 
-        {/* ================= NAVIGACIJA MESECA ================= */}
+        {/* ================= NAVIGACIJA MJESECA ================= */}
         <div style={styles.navContainer}>
           <button 
             onClick={handlePrevMonth} 
             style={styles.navButton}
-            aria-label="Prethodni mesec"
+            aria-label="Prethodni mjesec"
           >
             ‹
           </button>
@@ -551,7 +614,7 @@ export default function App() {
           <button 
             onClick={handleNextMonth} 
             style={styles.navButton}
-            aria-label="Sledeći mesec"
+            aria-label="Sljedeći mjesec"
           >
             ›
           </button>
@@ -559,14 +622,14 @@ export default function App() {
 
         {/* ================= KALENDAR MREŽA ================= */}
         <div style={styles.calendarWrapper}>
-          {/* Nazivi dana u nedelji */}
+          {/* Nazivi dana u nedjelji */}
           <div style={styles.weekDaysGrid}>
             {WEEK_DAYS.map((wd, index) => (
               <div 
                 key={wd} 
                 style={{
                   ...styles.weekDayHeader,
-                  color: index >= 5 ? '#e11d48' : '#64748b' // Vikend istaknut
+                  color: index >= 5 ? '#e11d48' : '#64748b'
                 }}
               >
                 {wd}
@@ -603,7 +666,7 @@ export default function App() {
                   }}
                   title={
                     isAdmin 
-                      ? `${cell.day}. ${MONTH_NAMES[currentMonth]} - Klik za promenu (Trenutno: ${parentStyle.label})`
+                      ? `${cell.day}. ${MONTH_NAMES[currentMonth]} - Klik za promjenu (Trenutno: ${parentStyle.label})`
                       : `${cell.day}. ${MONTH_NAMES[currentMonth]} - ${parentStyle.label}`
                   }
                 >
@@ -616,7 +679,7 @@ export default function App() {
                       {cell.day}
                     </span>
 
-                    {/* Ikonica napomene */}
+                    {/* Ikonica napomene / bilješke */}
                     {hasNote && (
                       <button
                         onClick={(e) => handleOpenNoteModal(dateKey, e)}
@@ -624,7 +687,7 @@ export default function App() {
                           ...styles.noteBadge,
                           backgroundColor: parent ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
                         }}
-                        title="Pogledaj napomenu"
+                        title="Pogledaj bilješku"
                       >
                         📝
                       </button>
@@ -642,12 +705,12 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* Dugme za dodavanje napomene u admin režimu ako ne postoji */}
+                  {/* Dugme za dodavanje bilješke u admin režimu ako ne postoji */}
                   {isAdmin && !hasNote && (
                     <button
                       onClick={(e) => handleOpenNoteModal(dateKey, e)}
                       style={styles.addNoteTinyBtn}
-                      title="Dodaj napomenu za ovaj dan"
+                      title="Dodaj bilješku za ovaj dan"
                     >
                       +📝
                     </button>
@@ -658,10 +721,10 @@ export default function App() {
           </div>
         </div>
 
-        {/* ================= STATUS SAČUVAVANJA ================= */}
+        {/* ================= STATUS ČUVANJA ================= */}
         {saveStatus !== 'idle' && (
           <div style={styles.saveToast}>
-            {saveStatus === 'saving' && '⏳ Čuvam izmene...'}
+            {saveStatus === 'saving' && '⏳ Čuvam izmjene...'}
             {saveStatus === 'saved' && '✅ Sačuvano u bazi!'}
             {saveStatus === 'error' && '⚠️ Greška pri čuvanju.'}
           </div>
@@ -671,9 +734,9 @@ export default function App() {
         <footer style={styles.footer}>
           <p style={styles.footerText}>
             {!isAdmin ? (
-              <>Savet za roditelje: Dodajte <strong>?admin=true</strong> u URL link za izmenu rasporeda.</>
+              <>Savjet za roditelje: Dodajte <strong>?admin=true</strong> u URL link za izmjenu rasporeda.</>
             ) : (
-              <>Prijavljeni ste u <strong>Admin režimu</strong>. Izmene se odmah sinhronizuju sa bazom.</>
+              <>Prijavljeni ste u <strong>Admin režimu</strong>. Izmjene se odmah sinhronizuju sa bazom.</>
             )}
           </p>
         </footer>
@@ -681,7 +744,7 @@ export default function App() {
       </div>
 
       {/* ======================================================== */}
-      {/* POP-UP / MODAL ZA NAPOMENE (READ-ONLY ILI ADMIN REŽIM) */}
+      {/* POP-UP / MODAL ZA BILJEŠKE (READ-ONLY ILI ADMIN REŽIM) */}
       {/* ======================================================== */}
       {activeModalDate && (
         <div style={styles.modalOverlay} onClick={() => setActiveModalDate(null)}>
@@ -689,7 +752,7 @@ export default function App() {
             <div style={styles.modalHeader}>
               <div>
                 <h3 style={styles.modalTitle}>
-                  {isAdmin ? 'Uređivanje dana' : 'Beleška za dan'}
+                  {isAdmin ? 'Uređivanje dana' : 'Bilješka za dan'}
                 </h3>
                 <span style={styles.modalSubtitle}>
                   📅 {formatFriendlyDate(activeModalDate)}
@@ -705,10 +768,10 @@ export default function App() {
             </div>
 
             <div style={styles.modalBody}>
-              {/* STATUS RODITELJA (U ADMINU MOŽE DA SE PROMENI I OVDE) */}
+              {/* STATUS RODITELJA (U ADMINU MOŽE DA SE PROMIJENI I OVDJE) */}
               {isAdmin ? (
                 <div style={styles.modalSection}>
-                  <label style={styles.inputLabel}>Ko je sa detetom ovog dana?</label>
+                  <label style={styles.inputLabel}>Ko je sa djetetom ovog dana?</label>
                   <div style={styles.parentRadioGroup}>
                     <button
                       type="button"
@@ -761,10 +824,10 @@ export default function App() {
                 </div>
               )}
 
-              {/* BELEŠKA / NAPOMENA */}
+              {/* BILJEŠKA / NAPOMENA */}
               <div style={styles.modalSection}>
                 <label style={styles.inputLabel}>
-                  {isAdmin ? 'Kratka napomena (aktivnosti, trening, rođendan):' : 'Zabeleška za ovaj dan:'}
+                  {isAdmin ? 'Kratka napomena (aktivnosti, trening, rođendan):' : 'Zabilješka za ovaj dan:'}
                 </label>
 
                 {isAdmin ? (
@@ -772,15 +835,15 @@ export default function App() {
                     <textarea
                       value={modalNoteText}
                       onChange={(e) => setModalNoteText(e.target.value)}
-                      placeholder="npr. Trening plivanja u 17h, lekarski pregled..."
+                      placeholder="npr. Trening plivanja u 17h, ljekarski pregled..."
                       rows={4}
                       style={styles.modalTextarea}
                       maxLength={200}
                     />
                     {/* Brzi tagovi za brzi unos */}
                     <div style={styles.quickTagsContainer}>
-                      <span style={styles.quickTagsTitle}>Brzi predlozi:</span>
-                      {['⚽ Trening', '🎒 Škola', '🎂 Rođendan', '🩺 Lekar', '🌳 Izlet', '🍿 Bioskop'].map(tag => (
+                      <span style={styles.quickTagsTitle}>Brzi prijedlozi:</span>
+                      {['⚽ Trening', '🎒 Škola', '🎂 Rođendan', '🩺 Ljekar', '🌳 Izlet', '🍿 Bioskop'].map(tag => (
                         <button
                           key={tag}
                           type="button"
@@ -814,7 +877,7 @@ export default function App() {
                       onClick={handleDeleteNote}
                       style={styles.modalDeleteBtn}
                     >
-                      Obriši belešku
+                      Obriši bilješku
                     </button>
                   )}
                   <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
@@ -869,7 +932,7 @@ export default function App() {
 
             <div style={styles.modalBody}>
               <p style={{ fontSize: '13px', color: '#475569', margin: '0 0 10px 0', lineHeight: 1.5 }}>
-                Otvorite vaš projekat na <strong>supabase.com</strong> ➔ idite na <strong>SQL Editor</strong> ➔ nalepite sledeći SQL i kliknite <strong>Run</strong>:
+                Otvorite vaš projekat na <strong>supabase.com</strong> ➔ idite na <strong>SQL Editor</strong> ➔ nalijepite sljedeći SQL i kliknite <strong>Run</strong>:
               </p>
 
               <pre style={styles.sqlCodeBlock}>
@@ -878,7 +941,7 @@ export default function App() {
 
               <div style={{ marginTop: '12px', fontSize: '12px', color: '#64748b' }}>
                 <p style={{ margin: '4px 0' }}>• Tabela: <strong>schedule</strong> (kolone: date, parent, note)</p>
-                <p style={{ margin: '4px 0' }}>• RLS politike: omogućavaju javno čitanje detetu i upis roditeljima.</p>
+                <p style={{ margin: '4px 0' }}>• RLS politike: omogućavaju javno čitanje djetetu i upis roditeljima.</p>
               </div>
             </div>
 
@@ -900,6 +963,127 @@ export default function App() {
                 style={styles.modalCloseBtn}
               >
                 Zatvori
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL ZA DODAVANJE NA POČETNI EKRAN (PWA UPUTSTVO) */}
+      {/* ======================================================== */}
+      {showInstallGuide && (
+        <div style={styles.modalOverlay} onClick={() => setShowInstallGuide(false)}>
+          <div style={{ ...styles.modalDialog, maxWidth: '400px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img 
+                  src="/icon.svg" 
+                  alt="Ikona kalendara" 
+                  style={{ width: '38px', height: '38px', borderRadius: '10px' }} 
+                />
+                <div>
+                  <h3 style={styles.modalTitle}>Dodaj na početni ekran</h3>
+                  <span style={styles.modalSubtitle}>Kao prava mobilna aplikacija</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowInstallGuide(false)} 
+                style={styles.modalCloseIcon}
+                aria-label="Zatvori"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={styles.modalBody}>
+              {/* Brzo dugme ako je dostupan sistemski prompt */}
+              {deferredPrompt && (
+                <div style={{ marginBottom: '14px' }}>
+                  <button
+                    onClick={async () => {
+                      if (deferredPrompt) {
+                        await deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === 'accepted') {
+                          setIsInstalled(true);
+                          setDeferredPrompt(null);
+                          setShowInstallGuide(false);
+                        }
+                      }
+                    }}
+                    style={styles.directInstallBigBtn}
+                  >
+                    📲 Klikni ovdje za brzu instalaciju
+                  </button>
+                </div>
+              )}
+
+              {/* Uputstvo za iPhone / iPad (iOS Safari) */}
+              <div style={{
+                ...styles.deviceGuideBox,
+                borderColor: isIOS ? '#2563eb' : '#e2e8f0',
+                backgroundColor: isIOS ? '#eff6ff' : '#f8fafc'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>🍏</span>
+                  <strong style={{ fontSize: '14px', color: '#0f172a' }}>
+                    Za iPhone i iPad (Safari):
+                  </strong>
+                  {isIOS && <span style={styles.detectedBadge}>Vaš uređaj</span>}
+                </div>
+                <ol style={styles.guideStepList}>
+                  <li>
+                    Dodirnite dugme <strong>Dijeli (Share)</strong> <span style={styles.stepIconBadge}>📤</span> na dnu Safari ekrana.
+                  </li>
+                  <li>
+                    Skrolujte nadole i izaberite <strong>Dodaj na početni ekran (Add to Home Screen)</strong> <span style={styles.stepIconBadge}>➕</span>.
+                  </li>
+                  <li>
+                    Pritisnite <strong>Dodaj (Add)</strong> u gornjem desnom uglu.
+                  </li>
+                </ol>
+              </div>
+
+              {/* Uputstvo za Android / Chrome */}
+              <div style={{
+                ...styles.deviceGuideBox,
+                borderColor: !isIOS ? '#2563eb' : '#e2e8f0',
+                backgroundColor: !isIOS ? '#eff6ff' : '#f8fafc',
+                marginTop: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>🤖</span>
+                  <strong style={{ fontSize: '14px', color: '#0f172a' }}>
+                    Za Android telefone (Chrome / Brave / Edge):
+                  </strong>
+                  {!isIOS && <span style={styles.detectedBadge}>Vaš uređaj</span>}
+                </div>
+                <ol style={styles.guideStepList}>
+                  <li>
+                    Otvorite meni pretraživača (tri tačkice <span style={styles.stepIconBadge}>⋮</span> u gornjem desnom uglu).
+                  </li>
+                  <li>
+                    Izaberite <strong>Instaliraj aplikaciju</strong> ili <strong>Dodaj na početni ekran</strong>.
+                  </li>
+                  <li>
+                    Potvrdite sa <strong>Instaliraj</strong>.
+                  </li>
+                </ol>
+              </div>
+
+              <p style={{ margin: '14px 0 0 0', fontSize: '12px', color: '#64748b', textAlign: 'center' }}>
+                🎉 Nakon ovoga ikonica kalendara biće na radnoj površini telefona sa svim roditeljskim bojama i bez adrasne trake pretraživača!
+              </p>
+            </div>
+
+            <div style={styles.modalFooter}>
+              <button
+                type="button"
+                onClick={() => setShowInstallGuide(false)}
+                style={styles.modalCloseBtn}
+              >
+                U redu, razumijem
               </button>
             </div>
           </div>
@@ -976,6 +1160,75 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#334155',
     cursor: 'pointer',
     whiteSpace: 'nowrap'
+  },
+  installPwaBadge: {
+    backgroundColor: '#eff6ff',
+    border: '1px solid #bfdbfe',
+    borderRadius: '12px',
+    padding: '4px 8px',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: '#1d4ed8',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    boxShadow: '0 1px 2px rgba(37, 99, 235, 0.08)'
+  },
+  installedPwaBadge: {
+    backgroundColor: '#ecfdf5',
+    border: '1px solid #a7f3d0',
+    borderRadius: '12px',
+    padding: '4px 8px',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: '#065f46',
+    whiteSpace: 'nowrap'
+  },
+  directInstallBigBtn: {
+    width: '100%',
+    backgroundColor: '#2563eb',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '12px 16px',
+    fontSize: '14px',
+    fontWeight: 800,
+    cursor: 'pointer',
+    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)'
+  },
+  deviceGuideBox: {
+    border: '1px solid',
+    borderRadius: '14px',
+    padding: '12px 14px',
+    transition: 'all 0.15s ease'
+  },
+  detectedBadge: {
+    backgroundColor: '#dbeafe',
+    color: '#1e40af',
+    fontSize: '10px',
+    fontWeight: 700,
+    padding: '2px 6px',
+    borderRadius: '6px',
+    marginLeft: 'auto'
+  },
+  guideStepList: {
+    margin: 0,
+    paddingLeft: '18px',
+    fontSize: '12px',
+    color: '#334155',
+    lineHeight: 1.6
+  },
+  stepIconBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '4px',
+    padding: '0 4px',
+    fontSize: '11px'
   },
   adminBanner: {
     backgroundColor: '#ecfdf5',
