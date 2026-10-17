@@ -4,23 +4,32 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 // ==========================================
 // 1. SUPABASE KONFIGURACIJA
 // ==========================================
-// Zamenite ove vrednosti vašim podacima iz Supabase Dashboard-a:
-// Settings -> API -> Project URL & Project API Keys (anon public)
 export const SUPABASE_URL = 
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || 
-  'https://your-project-id.supabase.co';
+  (typeof import.meta !== 'undefined' && (
+    import.meta.env?.VITE_SUPABASE_URL || 
+    import.meta.env?.NEXT_PUBLIC_SUPABASE_URL || 
+    import.meta.env?.SUPABASE_URL
+  )) || 
+  'https://egvdiftuvjjqsdwgptme.supabase.co';
 
 export const SUPABASE_ANON_KEY = 
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || 
-  'your-anon-key-here';
+  (typeof import.meta !== 'undefined' && (
+    import.meta.env?.VITE_SUPABASE_ANON_KEY || 
+    import.meta.env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 
+    import.meta.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+    import.meta.env?.SUPABASE_ANON_KEY ||
+    import.meta.env?.SUPABASE_PUBLISHABLE_KEY
+  )) || 
+  'sb_publishable_0kLG2nY_fsnGEVGCB_FLFg_UkAtnz-Z';
 
-// Bezbedna inicijalizacija Supabase klijenta
+// Inicijalizacija Supabase klijenta
 let supabaseInstance: SupabaseClient | null = null;
-const isSupabaseConfigured = 
+const isSupabaseConfigured = Boolean(
   SUPABASE_URL && 
   SUPABASE_URL !== 'https://your-project-id.supabase.co' && 
   SUPABASE_ANON_KEY && 
-  SUPABASE_ANON_KEY !== 'your-anon-key-here';
+  SUPABASE_ANON_KEY !== 'your-anon-key-here'
+);
 
 if (isSupabaseConfigured) {
   try {
