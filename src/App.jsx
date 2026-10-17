@@ -467,40 +467,43 @@ export default function App() {
         
         {/* ================= HEADER / NASLOV ================= */}
         <header style={styles.header}>
+          {/* NASLOV */}
           <div style={styles.titleRow}>
             <div style={styles.brandBadge}>
-              <span style={{ fontSize: '20px' }}>🏠</span>
+              <span style={{ fontSize: '22px' }}>🏠</span>
               <div>
                 <h1 style={styles.titleText}>Dječiji Kalendar</h1>
                 <p style={styles.subtitleText}>Gdje sam danas i plan nedjelje</p>
               </div>
             </div>
+          </div>
 
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              {/* Dugme za instalaciju na početni ekran / PWA */}
-              {!isInstalled ? (
-                <button
-                  onClick={handleInstallClick}
-                  style={styles.installPwaBadge}
-                  title="Dodaj aplikaciju na početni ekran telefona"
-                >
-                  📲 Dodaj na ekran
-                </button>
-              ) : (
-                <span style={styles.installedPwaBadge} title="Aplikacija je pokrenuta sa početnog ekrana">
-                  📱 Aplikacija
-                </span>
-              )}
-
-              {/* Indikator statusa baze / SQL pomoćnik */}
-              <button 
-                onClick={() => setShowSqlModal(true)}
-                style={styles.databaseBadge}
-                title="Supabase konfiguracija i SQL instrukcije"
+          {/* DUGMAD 'DODAJ NA EKRAN' I 'BAZA' U NOVOM REDU */}
+          <div style={styles.actionButtonsRow}>
+            {!isInstalled ? (
+              <button
+                onClick={handleInstallClick}
+                style={styles.installPwaBadge}
+                title="Dodaj aplikaciju na početni ekran telefona"
               >
-                {isSupabaseConfigured ? '⚡ Baza' : '💾 Demo'}
+                <span>📲</span>
+                <span>Dodaj na ekran</span>
               </button>
-            </div>
+            ) : (
+              <span style={styles.installedPwaBadge} title="Aplikacija je pokrenuta sa početnog ekrana">
+                <span>📱</span>
+                <span>Instalirano</span>
+              </span>
+            )}
+
+            <button 
+              onClick={() => setShowSqlModal(true)}
+              style={styles.databaseBadge}
+              title="Supabase konfiguracija i SQL instrukcije"
+            >
+              <span>{isSupabaseConfigured ? '⚡' : '💾'}</span>
+              <span>{isSupabaseConfigured ? 'Baza povezana' : 'SQL Baza'}</span>
+            </button>
           </div>
 
           {/* STATUS TRAKA ZA REŽIM (ADMIN / READ-ONLY) */}
@@ -1075,33 +1078,36 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'flex-start',
-    padding: '16px 12px 32px 12px',
+    padding: '8px 4px 24px 4px',
     boxSizing: 'border-box',
+    overflowX: 'hidden',
     fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
   },
   mobileCard: {
     width: '100%',
     maxWidth: '420px',
     backgroundColor: '#ffffff',
-    borderRadius: '24px',
+    borderRadius: '20px',
     boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03)',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
     border: '1px solid #e2e8f0',
+    boxSizing: 'border-box'
   },
   header: {
-    padding: '20px 20px 14px 20px',
+    padding: '16px 12px 12px 12px',
     borderBottom: '1px solid #f1f5f9',
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px'
+    gap: '10px',
+    boxSizing: 'border-box'
   },
   titleRow: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '8px'
+    justifyContent: 'flex-start',
+    width: '100%'
   },
   brandBadge: {
     display: 'flex',
@@ -1110,51 +1116,70 @@ const styles = {
   },
   titleText: {
     margin: 0,
-    fontSize: '19px',
+    fontSize: '18px',
     fontWeight: 800,
     color: '#0f172a',
-    letterSpacing: '-0.3px'
+    letterSpacing: '-0.3px',
+    lineHeight: 1.2
   },
   subtitleText: {
     margin: '2px 0 0 0',
     fontSize: '12px',
     color: '#64748b'
   },
+  actionButtonsRow: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+    width: '100%',
+    boxSizing: 'border-box'
+  },
   databaseBadge: {
     backgroundColor: '#f8fafc',
     border: '1px solid #e2e8f0',
     borderRadius: '12px',
-    padding: '4px 8px',
-    fontSize: '11px',
+    padding: '7px 12px',
+    fontSize: '12px',
     fontWeight: 600,
     color: '#334155',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap'
-  },
-  installPwaBadge: {
-    backgroundColor: '#eff6ff',
-    border: '1px solid #bfdbfe',
-    borderRadius: '12px',
-    padding: '4px 8px',
-    fontSize: '11px',
-    fontWeight: 700,
-    color: '#1d4ed8',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    boxShadow: '0 1px 2px rgba(37, 99, 235, 0.08)'
+    gap: '5px',
+    boxSizing: 'border-box'
+  },
+  installPwaBadge: {
+    flex: 1,
+    backgroundColor: '#eff6ff',
+    border: '1px solid #bfdbfe',
+    borderRadius: '12px',
+    padding: '7px 10px',
+    fontSize: '12px',
+    fontWeight: 700,
+    color: '#1d4ed8',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    boxShadow: '0 1px 2px rgba(37, 99, 235, 0.08)',
+    boxSizing: 'border-box'
   },
   installedPwaBadge: {
+    flex: 1,
     backgroundColor: '#ecfdf5',
     border: '1px solid #a7f3d0',
     borderRadius: '12px',
-    padding: '4px 8px',
-    fontSize: '11px',
+    padding: '7px 10px',
+    fontSize: '12px',
     fontWeight: 700,
     color: '#065f46',
-    whiteSpace: 'nowrap'
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    boxSizing: 'border-box'
   },
   directInstallBigBtn: {
     width: '100%',
@@ -1207,7 +1232,8 @@ const styles = {
     padding: '8px 12px',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    boxSizing: 'border-box'
   },
   readOnlyBanner: {
     backgroundColor: '#f8fafc',
@@ -1216,7 +1242,8 @@ const styles = {
     padding: '8px 12px',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    boxSizing: 'border-box'
   },
   bannerText: {
     fontSize: '12px',
@@ -1232,9 +1259,10 @@ const styles = {
   },
   todayCard: {
     backgroundColor: '#f8fafc',
-    borderRadius: '16px',
-    padding: '12px 14px',
+    borderRadius: '14px',
+    padding: '10px 12px',
     border: '1px solid #e2e8f0',
+    boxSizing: 'border-box'
   },
   todayLabel: {
     fontSize: '11px',
@@ -1250,7 +1278,7 @@ const styles = {
     marginTop: '3px'
   },
   todayParentName: {
-    fontSize: '16px',
+    fontSize: '15px',
     fontWeight: 800,
     color: '#0f172a'
   },
@@ -1258,8 +1286,8 @@ const styles = {
     backgroundColor: '#ffffff',
     border: '1px solid #cbd5e1',
     borderRadius: '10px',
-    padding: '6px 10px',
-    fontSize: '12px',
+    padding: '5px 8px',
+    fontSize: '11px',
     fontWeight: 600,
     color: '#1e293b',
     cursor: 'pointer',
@@ -1269,22 +1297,22 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: '12px',
-    paddingTop: '4px'
+    gap: '10px',
+    paddingTop: '2px'
   },
   legendItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px'
+    gap: '5px'
   },
   legendDot: {
-    width: '12px',
-    height: '12px',
+    width: '10px',
+    height: '10px',
     borderRadius: '50%',
     display: 'inline-block'
   },
   legendLabel: {
-    fontSize: '12px',
+    fontSize: '11px',
     fontWeight: 600,
     color: '#475569'
   },
@@ -1298,16 +1326,17 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '14px 20px',
-    backgroundColor: '#ffffff'
+    padding: '12px 14px',
+    backgroundColor: '#ffffff',
+    boxSizing: 'border-box'
   },
   navButton: {
-    width: '38px',
-    height: '38px',
-    borderRadius: '12px',
+    width: '36px',
+    height: '36px',
+    borderRadius: '10px',
     backgroundColor: '#f1f5f9',
     border: 'none',
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: 'bold',
     color: '#334155',
     cursor: 'pointer',
@@ -1321,7 +1350,7 @@ const styles = {
   },
   monthTitle: {
     margin: 0,
-    fontSize: '17px',
+    fontSize: '16px',
     fontWeight: 800,
     color: '#0f172a'
   },
@@ -1337,73 +1366,90 @@ const styles = {
     padding: 0
   },
   calendarWrapper: {
-    padding: '0 14px 16px 14px'
+    padding: '0 6px 14px 6px',
+    width: '100%',
+    boxSizing: 'border-box'
   },
   weekDaysGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
-    gap: '4px',
-    marginBottom: '6px',
-    textAlign: 'center'
+    gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+    gap: '3px',
+    marginBottom: '4px',
+    textAlign: 'center',
+    width: '100%',
+    boxSizing: 'border-box'
   },
   weekDayHeader: {
-    fontSize: '12px',
+    fontSize: '11px',
     fontWeight: 700,
-    padding: '6px 0'
+    padding: '4px 0',
+    minWidth: 0,
+    overflow: 'hidden',
+    textAlign: 'center'
   },
   daysGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
-    gap: '5px'
+    gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+    gap: '3px',
+    width: '100%',
+    boxSizing: 'border-box'
   },
   emptyCell: {
-    aspectRatio: '1 / 1.1',
-    backgroundColor: 'transparent'
+    aspectRatio: '1 / 1.15',
+    backgroundColor: 'transparent',
+    minWidth: 0
   },
   dayCell: {
-    aspectRatio: '1 / 1.15',
-    borderRadius: '12px',
+    aspectRatio: '1 / 1.18',
+    borderRadius: '10px',
     borderStyle: 'solid',
-    padding: '4px 3px',
+    padding: '3px 2px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
     position: 'relative',
     userSelect: 'none',
     boxSizing: 'border-box',
+    minWidth: 0,
+    overflow: 'hidden',
     transition: 'transform 0.1s ease, background-color 0.15s ease'
   },
   dayTopRow: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    width: '100%'
+    alignItems: 'center',
+    width: '100%',
+    minWidth: 0,
+    lineHeight: 1
   },
   dayNumber: {
-    fontSize: '13px',
+    fontSize: '11px',
     lineHeight: 1,
-    padding: '1px 2px'
+    padding: '0 1px',
+    fontWeight: 700
   },
   noteBadge: {
     border: 'none',
-    borderRadius: '6px',
-    padding: '1px 2px',
-    fontSize: '10px',
+    borderRadius: '4px',
+    padding: '0',
+    fontSize: '9px',
     lineHeight: 1,
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    minWidth: '12px',
+    height: '12px'
   },
   addNoteTinyBtn: {
     position: 'absolute',
-    bottom: '2px',
-    right: '2px',
+    bottom: '1px',
+    right: '1px',
     backgroundColor: 'rgba(0,0,0,0.06)',
     border: 'none',
-    borderRadius: '4px',
-    fontSize: '8px',
-    padding: '1px 3px',
+    borderRadius: '3px',
+    fontSize: '7px',
+    padding: '1px 2px',
     cursor: 'pointer',
     color: '#334155'
   },
@@ -1412,19 +1458,25 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    minWidth: 0,
     flex: 1
   },
   parentNameBadge: {
-    fontSize: '9px',
+    fontSize: '8px',
     fontWeight: 800,
-    letterSpacing: '0.4px',
+    letterSpacing: '0',
     textTransform: 'uppercase',
-    padding: '1px 4px',
-    borderRadius: '4px',
-    backgroundColor: 'rgba(255, 255, 255, 0.22)'
+    padding: '1px 2px',
+    borderRadius: '3px',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    textAlign: 'center'
   },
   emptyDayPlaceholder: {
-    fontSize: '12px',
+    fontSize: '10px',
     color: '#94a3b8',
     fontWeight: 500
   },
